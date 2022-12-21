@@ -29,6 +29,7 @@ import static com.mongodb.kafka.connect.source.MongoSourceConfig.HEARTBEAT_INTER
 import static com.mongodb.kafka.connect.source.MongoSourceConfig.HEARTBEAT_TOPIC_NAME_CONFIG;
 import static com.mongodb.kafka.connect.source.MongoSourceConfig.OUTPUT_FORMAT_KEY_CONFIG;
 import static com.mongodb.kafka.connect.source.MongoSourceConfig.OUTPUT_FORMAT_VALUE_CONFIG;
+import static com.mongodb.kafka.connect.source.MongoSourceConfig.OUTPUT_SCHEMA_COMBINE_COMPATIBLE_ARRAY_SCHEMAS_CONFIG;
 import static com.mongodb.kafka.connect.source.MongoSourceConfig.OUTPUT_SCHEMA_INFER_VALUE_CONFIG;
 import static com.mongodb.kafka.connect.source.MongoSourceConfig.OVERRIDE_ERRORS_DEAD_LETTER_QUEUE_TOPIC_NAME_CONFIG;
 import static com.mongodb.kafka.connect.source.MongoSourceConfig.OVERRIDE_ERRORS_LOG_ENABLE_CONFIG;
@@ -470,6 +471,23 @@ class MongoSourceConfigTest {
                 "__my_topic",
                 createSourceConfig(HEARTBEAT_TOPIC_NAME_CONFIG, "__my_topic")
                     .getString(HEARTBEAT_TOPIC_NAME_CONFIG)));
+  }
+
+  @Test
+  @DisplayName("test combine compatible array schemas")
+  void testCombineCompatibleArraySchemas() {
+    assertAll(
+        "Compatible array schemas",
+        () ->
+            assertEquals(
+                false,
+                createSourceConfig()
+                    .getBoolean(OUTPUT_SCHEMA_COMBINE_COMPATIBLE_ARRAY_SCHEMAS_CONFIG)),
+        () ->
+            assertEquals(
+                true,
+                createSourceConfig(OUTPUT_SCHEMA_COMBINE_COMPATIBLE_ARRAY_SCHEMAS_CONFIG, "true")
+                    .getBoolean(OUTPUT_SCHEMA_COMBINE_COMPATIBLE_ARRAY_SCHEMAS_CONFIG)));
   }
 
   private void assertInvalid(final String key, final String value) {

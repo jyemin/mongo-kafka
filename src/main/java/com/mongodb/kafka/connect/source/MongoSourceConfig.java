@@ -352,6 +352,16 @@ public class MongoSourceConfig extends AbstractConfig {
       "Use a custom offset partition name. If blank the default partition name based on the "
           + "connection details will be used.";
 
+  public static final String OUTPUT_SCHEMA_COMBINE_COMPATIBLE_ARRAY_SCHEMAS_CONFIG =
+      "output.schema.combine.compatible.array.schemas";
+  private static final String OUTPUT_SCHEMA_COMBINE_COMPATIBLE_ARRAY_SCHEMAS_DISPLAY =
+      "Combine compatible array schemas (deprecated)";
+  private static final String OUTPUT_SCHEMA_COMBINE_COMPATIBLE_ARRAY_SCHEMAS_DOC =
+      "Combine compatible array schemas.  The default value for this configuration is false. "
+          + "This configuration is temporary and should be considered as effectively "
+          + "deprecated.  It may be removed in a minor release";
+  private static final boolean OUTPUT_SCHEMA_COMBINE_COMPATIBLE_ARRAY_SCHEMAS_DEFAULT = false;
+
   static final String PROVIDER_CONFIG = "provider";
 
   public static final ConfigDef CONFIG = createConfigDef();
@@ -781,6 +791,17 @@ public class MongoSourceConfig extends AbstractConfig {
         ++orderInGroup,
         ConfigDef.Width.MEDIUM,
         OUTPUT_JSON_FORMATTER_DISPLAY);
+
+    configDef.define(
+        OUTPUT_SCHEMA_COMBINE_COMPATIBLE_ARRAY_SCHEMAS_CONFIG,
+        Type.BOOLEAN,
+        OUTPUT_SCHEMA_COMBINE_COMPATIBLE_ARRAY_SCHEMAS_DEFAULT,
+        Importance.MEDIUM,
+        OUTPUT_SCHEMA_COMBINE_COMPATIBLE_ARRAY_SCHEMAS_DOC,
+        group,
+        ++orderInGroup,
+        Width.MEDIUM,
+        OUTPUT_SCHEMA_COMBINE_COMPATIBLE_ARRAY_SCHEMAS_DISPLAY);
 
     group = "Copy existing";
     orderInGroup = 0;

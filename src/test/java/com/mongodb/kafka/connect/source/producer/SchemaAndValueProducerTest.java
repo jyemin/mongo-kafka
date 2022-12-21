@@ -256,7 +256,7 @@ public class SchemaAndValueProducerTest {
                 .put("undefined", "{\"$undefined\": true}"));
 
     SchemaAndValueProducer valueProducer =
-        new InferSchemaAndValueProducer(SIMPLE_JSON_WRITER_SETTINGS);
+        new InferSchemaAndValueProducer(SIMPLE_JSON_WRITER_SETTINGS, false);
 
     assertSchemaAndValueEquals(
         expectedSchemaAndValue, valueProducer.get(BsonDocument.parse(FULL_DOCUMENT_JSON)));

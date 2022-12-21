@@ -27,14 +27,18 @@ import com.mongodb.kafka.connect.source.schema.BsonValueToSchemaAndValue;
 
 final class InferSchemaAndValueProducer implements SchemaAndValueProducer {
   private final BsonValueToSchemaAndValue bsonValueToSchemaAndValue;
+  private final boolean combineCompatibleArraySchemas;
 
-  InferSchemaAndValueProducer(final JsonWriterSettings jsonWriterSettings) {
+  InferSchemaAndValueProducer(
+      final JsonWriterSettings jsonWriterSettings, final boolean combineCompatibleArraySchemas) {
     bsonValueToSchemaAndValue = new BsonValueToSchemaAndValue(jsonWriterSettings);
+    this.combineCompatibleArraySchemas = combineCompatibleArraySchemas;
   }
 
   @Override
   public SchemaAndValue get(final BsonDocument changeStreamDocument) {
     return bsonValueToSchemaAndValue.toSchemaAndValue(
-        inferDocumentSchema(changeStreamDocument), changeStreamDocument);
+        inferDocumentSchema(changeStreamDocument, combineCompatibleArraySchemas),
+        changeStreamDocument);
   }
 }
