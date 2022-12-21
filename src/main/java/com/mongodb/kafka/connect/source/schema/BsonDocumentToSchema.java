@@ -81,17 +81,14 @@ public final class BsonDocumentToSchema {
         return inferDocumentSchema(fieldPath, bsonValue.asDocument());
       case ARRAY:
         List<BsonValue> values = bsonValue.asArray().getValues();
-        Schema firstItemSchema =
-            values.isEmpty() ? DEFAULT_INFER_SCHEMA_TYPE : inferSchema(fieldPath, values.get(0));
-        if (values.isEmpty()
-            || values.stream()
-                .anyMatch(bv -> !Objects.equals(inferSchema(fieldPath, bv), firstItemSchema))) {
-          return SchemaBuilder.array(DEFAULT_INFER_SCHEMA_TYPE).name(fieldPath).optional().build();
+        if (values.isEmpty()) {
+          return DEFAULT_INFER_SCHEMA_TYPE;
         }
-        return SchemaBuilder.array(inferSchema(fieldPath, bsonValue.asArray().getValues().get(0)))
-            .name(fieldPath)
-            .optional()
-            .build();
+        Schema firstItemSchema = inferSchema(fieldPath, values.get(0));
+        return values.stream()
+                .allMatch(bv -> Objects.equals(inferSchema(fieldPath, bv), firstItemSchema))
+            ? SchemaBuilder.array(firstItemSchema).name(fieldPath).optional().build()
+            : SchemaBuilder.array(DEFAULT_INFER_SCHEMA_TYPE).name(fieldPath).optional().build();
       case BINARY:
         return Schema.OPTIONAL_BYTES_SCHEMA;
       case SYMBOL:
