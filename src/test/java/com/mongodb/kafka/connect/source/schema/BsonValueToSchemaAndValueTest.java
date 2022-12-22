@@ -21,6 +21,7 @@ import static com.mongodb.kafka.connect.source.schema.SchemaUtils.assertSchemaAn
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.nio.charset.StandardCharsets;
@@ -44,6 +45,7 @@ import org.apache.kafka.connect.errors.DataException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import org.bson.BsonArray;
 import org.bson.BsonBoolean;
 import org.bson.BsonDateTime;
 import org.bson.BsonDecimal128;
@@ -51,6 +53,8 @@ import org.bson.BsonDocument;
 import org.bson.BsonDouble;
 import org.bson.BsonInt32;
 import org.bson.BsonInt64;
+import org.bson.BsonNull;
+import org.bson.BsonString;
 import org.bson.BsonTimestamp;
 import org.bson.RawBsonDocument;
 import org.bson.types.Decimal128;
@@ -447,5 +451,70 @@ public class BsonValueToSchemaAndValueTest {
     BsonDocument invalidDoc = BsonDocument.parse(BSON_DOCUMENT.getDocument("mySubDoc").toJson());
     invalidDoc.remove("A");
     assertThrows(DataException.class, () -> CONVERTER.toSchemaAndValue(schema, invalidDoc));
+  }
+
+  @Test
+  void testEmptyArrayCombiningSupport() {
+    BsonDocument document =
+        new BsonDocument()
+            .append(
+                "outerArray",
+                new BsonArray(
+                    asList(
+                        new BsonDocument("innerArray", new BsonArray()),
+                        new BsonDocument(
+                            "innerArray",
+                            new BsonArray(asList(new BsonInt32(1), new BsonInt32(2)))),
+                        new BsonDocument(
+                            "innerArray",
+                            new BsonArray(asList(new BsonInt32(3), new BsonInt32(4)))))));
+
+    SchemaAndValue schemaAndValue =
+        CONVERTER.toSchemaAndValue(BsonDocumentToSchema.inferDocumentSchema(document), document);
+    // TODO: more assertions!  It looks good with the eye test though
+    assertNotNull(schemaAndValue.value());
+  }
+
+  @Test
+  void testStructCombiningArraySupport() {
+    BsonDocument document =
+        new BsonDocument()
+            .append(
+                "outerArray",
+                new BsonArray(
+                    asList(
+                        new BsonDocument()
+                            .append("a", new BsonInt32(1))
+                            .append("b", new BsonString("foo")),
+                        new BsonDocument()
+                            .append("b", new BsonString("foo"))
+                            .append("c", new BsonInt32(2)))));
+    SchemaAndValue schemaAndValue =
+        CONVERTER.toSchemaAndValue(BsonDocumentToSchema.inferDocumentSchema(document), document);
+    // TODO: more assertions!  It looks good with the eye test though
+    assertNotNull(schemaAndValue.value());
+  }
+
+  @Test
+  void testStructCombiningArraySupportWithNulls() {
+    BsonDocument document =
+        new BsonDocument()
+            .append(
+                "outerArray",
+                new BsonArray(
+                    asList(
+                        new BsonDocument()
+                            .append("a", new BsonInt32(1))
+                            .append("b", new BsonString("foo"))
+                            .append("c", BsonNull.VALUE),
+                        new BsonDocument()
+                            .append("a", BsonNull.VALUE)
+                            .append("b", new BsonString("foo"))
+                            .append("c", new BsonInt32(2)))));
+
+    SchemaAndValue schemaAndValue =
+        CONVERTER.toSchemaAndValue(BsonDocumentToSchema.inferDocumentSchema(document), document);
+    // TODO: more assertions!  It looks good with the eye test though
+    assertNotNull(schemaAndValue.value());
   }
 }

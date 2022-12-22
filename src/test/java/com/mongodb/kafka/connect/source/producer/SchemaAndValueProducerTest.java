@@ -208,7 +208,7 @@ public class SchemaAndValueProducerTest {
             .field("int64", Schema.OPTIONAL_INT64_SCHEMA)
             .field("maxKey", Schema.OPTIONAL_STRING_SCHEMA)
             .field("minKey", Schema.OPTIONAL_STRING_SCHEMA)
-            .field("null", Schema.OPTIONAL_STRING_SCHEMA)
+            .field("null", SchemaBuilder.string().optional().defaultValue("").build())
             .field("objectId", Schema.OPTIONAL_STRING_SCHEMA)
             .field("regex", Schema.OPTIONAL_STRING_SCHEMA)
             .field("string", Schema.OPTIONAL_STRING_SCHEMA)
@@ -258,8 +258,8 @@ public class SchemaAndValueProducerTest {
     SchemaAndValueProducer valueProducer =
         new InferSchemaAndValueProducer(SIMPLE_JSON_WRITER_SETTINGS);
 
-    assertSchemaAndValueEquals(
-        expectedSchemaAndValue, valueProducer.get(BsonDocument.parse(FULL_DOCUMENT_JSON)));
+    SchemaAndValue actual = valueProducer.get(BsonDocument.parse(FULL_DOCUMENT_JSON));
+    assertSchemaAndValueEquals(expectedSchemaAndValue, actual);
   }
 
   @Test
