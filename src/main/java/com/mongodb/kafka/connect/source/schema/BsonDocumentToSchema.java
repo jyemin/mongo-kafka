@@ -16,6 +16,9 @@
 
 package com.mongodb.kafka.connect.source.schema;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.kafka.connect.data.Decimal;
@@ -36,12 +39,13 @@ public final class BsonDocumentToSchema {
 
   static final Logger LOGGER = LoggerFactory.getLogger(MongoSourceTask.class);
 
+  private static final String SENTINEL_FOR_NULL_OR_EMPTY = "";
   private static final String ID_FIELD = "_id";
   private static final Schema DEFAULT_INFER_SCHEMA_TYPE = Schema.OPTIONAL_STRING_SCHEMA;
   public static final String DEFAULT_FIELD_NAME = "default";
 
   public static Schema inferDocumentSchema(final BsonDocument document) {
-    return createSchemaBuilder(DEFAULT_FIELD_NAME, document).required().build();
+    return normalizeSchema(createSchemaBuilder(DEFAULT_FIELD_NAME, document).required().build());
   }
 
   private static Schema inferDocumentSchema(final String fieldPath, final BsonDocument document) {
@@ -91,9 +95,8 @@ public final class BsonDocumentToSchema {
           return SchemaBuilder.array(
                   SchemaBuilder.string()
                       .optional()
-                      // TODO: Hack sentinel value of "" added to detect the empty array case.
-                      // Probably needs to be removed in a post-processing step
-                      .defaultValue("")
+                      // Sentinel value added to detect the empty array case.
+                      .defaultValue(SENTINEL_FOR_NULL_OR_EMPTY)
                       .build())
               .name(fieldPath)
               .optional()
@@ -117,9 +120,8 @@ public final class BsonDocumentToSchema {
       case NULL:
         return SchemaBuilder.string()
             .optional()
-            // TODO: Hack sentinel value of "" added to detect the empty array case.
-            // Probably needs to be removed in a post-processing step
-            .defaultValue("")
+            // Sentinel value added to detect the empty array case.
+            .defaultValue(SENTINEL_FOR_NULL_OR_EMPTY)
             .build();
       case OBJECT_ID:
       case REGULAR_EXPRESSION:
@@ -195,7 +197,6 @@ public final class BsonDocumentToSchema {
       }
     }
 
-    // TODO: this destroys the alphabetical field order that is enforced in #createSchemaBuilder
     for (Field secondField : secondSchema.fields()) {
       if (firstSchema.field(secondField.name()) == null) {
         builder.field(secondField.name(), secondField.schema());
@@ -205,9 +206,60 @@ public final class BsonDocumentToSchema {
     return builder.build();
   }
 
-  // TODO: relies on the hacky sentinel value of "" added above
+  // Relies on the sentinel value added above
   private static boolean isSentinelValueSet(final Schema schema) {
-    return schema.type() == Schema.Type.STRING && "".equals(schema.defaultValue());
+    return schema.type() == Schema.Type.STRING
+        && SENTINEL_FOR_NULL_OR_EMPTY.equals(schema.defaultValue());
+  }
+
+  /**
+   * This method normalizes the schema that had been denormalized due to the array element
+   * schema-combining logic applied as part of schema building process.
+   */
+  private static Schema normalizeSchema(final Schema schema) {
+    switch (schema.type()) {
+      case STRUCT:
+        return normalizeStructSchema(schema);
+      case ARRAY:
+        SchemaBuilder arraySchemaBuilder =
+            SchemaBuilder.array(normalizeSchema(schema.valueSchema()));
+        if (schema.isOptional()) {
+          arraySchemaBuilder.optional();
+        }
+        return arraySchemaBuilder.build();
+      case STRING:
+        SchemaBuilder stringSchemaBuilder = SchemaBuilder.string();
+        if (schema.isOptional()) {
+          stringSchemaBuilder.optional();
+        }
+        return stringSchemaBuilder.build();
+      default:
+        return schema;
+    }
+  }
+
+  private static Schema normalizeStructSchema(final Schema schema) {
+    SchemaBuilder builder = SchemaBuilder.struct().name(schema.name());
+    if (schema.isOptional()) {
+      builder.optional();
+    }
+
+    List<Field> fields = new ArrayList<>(schema.fields());
+    fields.sort(Comparator.comparing(Field::name));
+
+    Field idField = schema.field(ID_FIELD);
+    if (idField != null) {
+      builder.field(idField.name(), normalizeSchema(idField.schema()));
+    }
+
+    for (Field cur : fields) {
+      if (cur.name().equals(ID_FIELD)) {
+        continue;
+      }
+      builder.field(cur.name(), normalizeSchema(cur.schema()));
+    }
+
+    return builder.build();
   }
 
   private static String createFieldPath(final String fieldPath, final String fieldName) {

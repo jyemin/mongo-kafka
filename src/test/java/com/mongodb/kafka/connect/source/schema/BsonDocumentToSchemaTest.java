@@ -24,6 +24,7 @@ import static org.apache.kafka.connect.data.Schema.Type.STRING;
 import static org.apache.kafka.connect.data.Schema.Type.STRUCT;
 import static org.bson.BsonDocument.parse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -154,7 +155,9 @@ public class BsonDocumentToSchemaTest {
                         new BsonDocument()
                             .append("a", new BsonInt32(1))
                             .append("b", new BsonString("foo"))
-                            .append("c", BsonNull.VALUE),
+                            .append("c", BsonNull.VALUE)
+                            .append("d", BsonNull.VALUE)
+                            .append("e", new BsonArray()),
                         new BsonDocument()
                             .append("a", BsonNull.VALUE)
                             .append("b", new BsonString("foo"))
@@ -172,6 +175,10 @@ public class BsonDocumentToSchemaTest {
     assertEquals(INT32, outerArrayValueSchema.field("a").schema().type());
     assertEquals(STRING, outerArrayValueSchema.field("b").schema().type());
     assertEquals(INT32, outerArrayValueSchema.field("c").schema().type());
+    assertEquals(STRING, outerArrayValueSchema.field("d").schema().type());
+    assertNull(outerArrayValueSchema.field("d").schema().defaultValue());
+    assertEquals(STRING, outerArrayValueSchema.field("e").schema().valueSchema().type());
+    assertNull(outerArrayValueSchema.field("e").schema().valueSchema().defaultValue());
   }
 
   @Test
