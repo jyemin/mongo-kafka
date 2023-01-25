@@ -16,13 +16,13 @@
 
 package com.mongodb.kafka.connect.source.producer;
 
-import static com.mongodb.kafka.connect.source.schema.BsonDocumentToSchema.inferDocumentSchema;
-
 import org.apache.kafka.connect.data.SchemaAndValue;
 
 import org.bson.BsonDocument;
 import org.bson.json.JsonWriterSettings;
 
+import com.mongodb.kafka.connect.source.schema.BsonDocumentToSchema;
+import com.mongodb.kafka.connect.source.schema.BsonDocumentToSchemaOneDotEight;
 import com.mongodb.kafka.connect.source.schema.BsonValueToSchemaAndValue;
 
 final class InferSchemaAndValueProducer implements SchemaAndValueProducer {
@@ -37,8 +37,13 @@ final class InferSchemaAndValueProducer implements SchemaAndValueProducer {
 
   @Override
   public SchemaAndValue get(final BsonDocument changeStreamDocument) {
-    return bsonValueToSchemaAndValue.toSchemaAndValue(
-        inferDocumentSchema(changeStreamDocument, combineCompatibleArraySchemas),
-        changeStreamDocument);
+    if (combineCompatibleArraySchemas) {
+      return bsonValueToSchemaAndValue.toSchemaAndValue(
+          BsonDocumentToSchema.inferDocumentSchema(changeStreamDocument), changeStreamDocument);
+    } else {
+      return bsonValueToSchemaAndValue.toSchemaAndValue(
+          BsonDocumentToSchemaOneDotEight.inferDocumentSchema(changeStreamDocument),
+          changeStreamDocument);
+    }
   }
 }
